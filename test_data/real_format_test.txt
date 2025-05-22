@@ -1,0 +1,35 @@
+File Details:
+File Type    Spectrum
+File Version    5
+Start Date    2025-04-23
+Start Time    02:12:34
+Time Zone    UTC
+Author    Ocean Sonics' Lucy V4.4.0
+Computer    SABICROV
+User    SABICROVUSER
+Client    PRO-262 SABIC
+Job    Demonstration
+Personnel    Nick Trevean
+Starting Sample    57856000
+
+Device Details:
+Device    icListen HF
+S/N    7014
+Firmware    v2.6.20
+
+Setup:
+dB Ref re 1V    -180
+dB Ref re 1uPa    -8
+Sample Rate [S/s]    64000
+FFT Size    1024
+Bin Width [Hz]    62.5
+Window Function    Hann
+Overlap [%]    50.0
+Power Calculation    Mean
+Accumulations    125
+
+2025-04-23 02:12:34	100.5	-120.2	45.3
+2025-04-23 02:12:35	101.2	-119.8	46.1
+2025-04-23 02:12:36	99.8	-121.1	44.8
+2025-04-23 02:12:37	102.1	-118.9	47.2
+2025-04-23 02:12:38	100.3	-120.5	45.7
