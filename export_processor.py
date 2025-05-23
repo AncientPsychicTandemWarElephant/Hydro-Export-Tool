@@ -550,40 +550,40 @@ class ExportProcessor:
         # File Details section
         header_lines.extend([
             "# File Details:",
-            f"# File Type\t{metadata.get('file_type', 'Spectrum')}",
-            f"# File Version\t{metadata.get('file_version', '5')}",
-            f"# Start Date\t{metadata.get('start_date', '')}",
-            f"# Start Time\t{metadata.get('start_time', '')}",
-            f"# Time Zone\t{metadata.get('timezone', 'UTC')}",
-            f"# Author\t{metadata.get('author', '')}",
-            f"# Computer\t{metadata.get('computer', '')}",
-            f"# User\t{metadata.get('user', '')}",
-            f"# Client\t{metadata.get('client', '')}",
-            f"# Job\t{metadata.get('job', '')}",
-            f"# Personnel\t{metadata.get('personnel', '')}",
-            f"# Starting Sample\t{metadata.get('starting_sample', '')}"
+            f"File Type\t{metadata.get('file_type', 'Spectrum')}",
+            f"File Version\t{metadata.get('file_version', '5')}",
+            f"Start Date\t{metadata.get('start_date', '')}",
+            f"Start Time\t{metadata.get('start_time', '')}",
+            f"Time Zone\t{metadata.get('timezone', 'UTC')}",
+            f"Author\t{metadata.get('author', '')}",
+            f"Computer\t{metadata.get('computer', '')}",
+            f"User\t{metadata.get('user', '')}",
+            f"Client\t{metadata.get('client', '')}",
+            f"Job\t{metadata.get('job', '')}",
+            f"Personnel\t{metadata.get('personnel', '')}",
+            f"Starting Sample\t{metadata.get('starting_sample', '')}"
         ])
         
         # Device Details section
         header_lines.extend([
             "# Device Details:",
-            f"# Device\t{metadata.get('device', '')}",
-            f"# S/N\t{metadata.get('serial_number', '')}",
-            f"# Firmware\t{metadata.get('firmware', '')}"
+            f"Device\t{metadata.get('device', '')}",
+            f"S/N\t{metadata.get('serial_number', '')}",
+            f"Firmware\t{metadata.get('firmware', '')}"
         ])
         
         # Setup section
         header_lines.extend([
             "# Setup:",
-            f"# dB Ref re 1V\t{metadata.get('db_ref_1v', '')}",
-            f"# dB Ref re 1uPa\t{metadata.get('db_ref_1upa', '')}",
-            f"# Sample Rate [S/s]\t{metadata.get('sample_rate', '')}",
-            f"# FFT Size\t{metadata.get('fft_size', '')}",
-            f"# Bin Width [Hz]\t{metadata.get('bin_width', '')}",
-            f"# Window Function\t{metadata.get('window_function', '')}",
-            f"# Overlap [%]\t{metadata.get('overlap', '')}",
-            f"# Power Calculation\t{metadata.get('power_calculation', '')}",
-            f"# Accumulations\t{metadata.get('accumulations', '')}"
+            f"dB Ref re 1V\t{metadata.get('db_ref_1v', '')}",
+            f"dB Ref re 1uPa\t{metadata.get('db_ref_1upa', '')}",
+            f"Sample Rate [S/s]\t{metadata.get('sample_rate', '')}",
+            f"FFT Size\t{metadata.get('fft_size', '')}",
+            f"Bin Width [Hz]\t{metadata.get('bin_width', '')}",
+            f"Window Function\t{metadata.get('window_function', '')}",
+            f"Overlap [%]\t{metadata.get('overlap', '')}",
+            f"Power Calculation\t{metadata.get('power_calculation', '')}",
+            f"Accumulations\t{metadata.get('accumulations', '')}"
         ])
         
         # Data section header
@@ -600,6 +600,12 @@ class ExportProcessor:
                                  original_header_lines: List[str]) -> None:
         """Extract and add the original data header line."""
         for line in original_header_lines:
-            if line.strip().startswith('# Time\t') and 'Data Points' in line:
-                header_lines.append(line.strip())
+            line_stripped = line.strip()
+            if (line_stripped.startswith('Time\t') and 'Data Points' in line_stripped) or \
+               (line_stripped.startswith('# Time\t') and 'Data Points' in line_stripped):
+                # Remove leading # if present and add without #
+                if line_stripped.startswith('# '):
+                    header_lines.append(line_stripped[2:])
+                else:
+                    header_lines.append(line_stripped)
                 break
