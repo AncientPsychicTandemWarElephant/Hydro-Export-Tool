@@ -547,9 +547,9 @@ class ExportProcessor:
         header_lines: List[str] = []
         metadata = file_data['metadata']
         
-        # File Details section
+        # File Details section (matching original Ocean Sonics format exactly)
         header_lines.extend([
-            "# File Details:",
+            "File Details:",
             f"File Type\t{metadata.get('file_type', 'Spectrum')}",
             f"File Version\t{metadata.get('file_version', '5')}",
             f"Start Date\t{metadata.get('start_date', '')}",
@@ -561,20 +561,22 @@ class ExportProcessor:
             f"Client\t{metadata.get('client', '')}",
             f"Job\t{metadata.get('job', '')}",
             f"Personnel\t{metadata.get('personnel', '')}",
-            f"Starting Sample\t{metadata.get('starting_sample', '')}"
+            f"Starting Sample\t{metadata.get('starting_sample', '')}",
+            ""  # Empty line after File Details section
         ])
         
         # Device Details section
         header_lines.extend([
-            "# Device Details:",
+            "Device Details:",
             f"Device\t{metadata.get('device', '')}",
             f"S/N\t{metadata.get('serial_number', '')}",
-            f"Firmware\t{metadata.get('firmware', '')}"
+            f"Firmware\t{metadata.get('firmware', '')}",
+            ""  # Empty line after Device Details section
         ])
         
         # Setup section
         header_lines.extend([
-            "# Setup:",
+            "Setup:",
             f"dB Ref re 1V\t{metadata.get('db_ref_1v', '')}",
             f"dB Ref re 1uPa\t{metadata.get('db_ref_1upa', '')}",
             f"Sample Rate [S/s]\t{metadata.get('sample_rate', '')}",
@@ -583,16 +585,15 @@ class ExportProcessor:
             f"Window Function\t{metadata.get('window_function', '')}",
             f"Overlap [%]\t{metadata.get('overlap', '')}",
             f"Power Calculation\t{metadata.get('power_calculation', '')}",
-            f"Accumulations\t{metadata.get('accumulations', '')}"
+            f"Accumulations\t{metadata.get('accumulations', '')}",
+            ""  # Empty line after Setup section
         ])
         
         # Data section header
-        header_lines.append("# Data:")
+        header_lines.append("Data:")
         
         # Extract data header line from original file
         self._add_original_data_header(header_lines, file_data['header_lines'])
-        
-        header_lines.append("#")
         
         return '\n'.join(header_lines)
     
