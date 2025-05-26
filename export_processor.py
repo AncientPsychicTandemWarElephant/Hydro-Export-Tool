@@ -206,9 +206,15 @@ class ExportProcessor:
                     f.write(ocean_sonics_header)
                     f.write('\n')
                 
-                # Write data lines directly
+                # Write data lines with timezone-converted timestamps
+                original_timezone = file_data.get('original_timezone', 'UTC')
+                target_timezone = file_data['metadata'].get('timezone', 'UTC')
+                
                 for data_line in file_data['data_lines']:
-                    f.write(f"{data_line}\n")
+                    converted_line = self._convert_data_line_timezone(
+                        data_line, original_timezone, target_timezone, file_data['metadata']
+                    )
+                    f.write(f"{converted_line}\n")
             
             logging.info(f"Individual file written: {os.path.basename(output_path)}")
             
@@ -238,11 +244,15 @@ class ExportProcessor:
             # Parse header metadata
             metadata = self._parse_header_metadata(header_lines)
             
+            # Capture the original timezone before any modifications
+            original_timezone = metadata.get('timezone', 'UTC')
+            
             return {
                 'file_path': file_path,
                 'metadata': metadata,
                 'header_lines': header_lines,
-                'data_lines': data_lines
+                'data_lines': data_lines,
+                'original_timezone': original_timezone
             }
             
         except Exception as e:
@@ -530,9 +540,15 @@ class ExportProcessor:
                                     options: Dict[str, Any]) -> None:
         """Write the combined data section to the output file."""
         for i, file_data in enumerate(all_data):
-            # Write data lines directly without file separators for seamless merging
+            # Write data lines with timezone-converted timestamps for seamless merging
+            original_timezone = file_data.get('original_timezone', 'UTC')
+            target_timezone = file_data['metadata'].get('timezone', 'UTC')
+            
             for data_line in file_data['data_lines']:
-                file_handle.write(f"{data_line}\n")
+                converted_line = self._convert_data_line_timezone(
+                    data_line, original_timezone, target_timezone, file_data['metadata']
+                )
+                file_handle.write(f"{converted_line}\n")
     
     def _create_ocean_sonics_header(self, file_data: Dict[str, Any]) -> str:
         """
@@ -596,6 +612,75 @@ class ExportProcessor:
         self._add_original_data_header(header_lines, file_data['header_lines'])
         
         return '\n'.join(header_lines)
+    
+    def _convert_data_line_timezone(self, data_line: str, original_tz: str, target_tz: str, 
+                                   metadata: Dict[str, str]) -> str:
+        """
+        Convert the timestamp in a data line from original timezone to target timezone.
+        
+        Args:
+            data_line: Original data line with timestamp
+            original_tz: Original timezone identifier
+            target_tz: Target timezone identifier
+            metadata: File metadata for date context
+            
+        Returns:
+            Data line with converted timestamp
+        """
+        try:
+            # Skip conversion if timezones are the same
+            if original_tz == target_tz:
+                return data_line
+            
+            # Split the line to extract timestamp (first column)
+            parts = data_line.split('\t')
+            if len(parts) < 1:
+                return data_line
+            
+            timestamp_str = parts[0]
+            
+            # Parse the time
+            try:
+                time_obj = datetime.strptime(timestamp_str, "%H:%M:%S")
+            except ValueError:
+                # If parsing fails, return original line
+                return data_line
+            
+            # Get the date from metadata
+            start_date_str = metadata.get('start_date', '')
+            if start_date_str:
+                try:
+                    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    # If date parsing fails, use today
+                    start_date = datetime.today().date()
+            else:
+                start_date = datetime.today().date()
+            
+            # Create full datetime
+            full_datetime = datetime.combine(start_date, time_obj.time())
+            
+            # Convert timezone
+            converted_datetime = self.timezone_converter.convert_timestamp(
+                full_datetime, original_tz, target_tz
+            )
+            
+            if converted_datetime is None:
+                # If conversion fails, return original line
+                logging.warning(f"Failed to convert timestamp {timestamp_str} from {original_tz} to {target_tz}")
+                return data_line
+            
+            # Format the converted time (just the time part)
+            converted_time_str = converted_datetime.strftime("%H:%M:%S")
+            
+            # Replace the timestamp in the original line
+            parts[0] = converted_time_str
+            
+            return '\t'.join(parts)
+            
+        except Exception as e:
+            logging.warning(f"Error converting timestamp in line: {str(e)}")
+            return data_line
     
     def _add_original_data_header(self, header_lines: List[str], 
                                  original_header_lines: List[str]) -> None:
