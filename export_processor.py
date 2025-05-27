@@ -463,7 +463,8 @@ class ExportProcessor:
                     'file_path': entry['file_path'],
                     'metadata': entry['metadata'],
                     'header_lines': original_file_data['header_lines'] if original_file_data else [],
-                    'data_lines': []
+                    'data_lines': [],
+                    'original_timezone': original_file_data.get('original_timezone') if original_file_data else None
                 }
                 current_file = entry['file_path']
             
@@ -563,13 +564,22 @@ class ExportProcessor:
         header_lines: List[str] = []
         metadata = file_data['metadata']
         
+        # Convert Start Time if timezone has changed
+        start_time = metadata.get('start_time', '')
+        if start_time and 'original_timezone' in file_data:
+            original_tz = file_data['original_timezone']
+            target_tz = metadata.get('timezone', 'UTC')
+            
+            if original_tz != target_tz:
+                start_time = self._convert_start_time_timezone(start_time, original_tz, target_tz, metadata)
+        
         # File Details section (matching original Ocean Sonics format exactly)
         header_lines.extend([
             "File Details:",
             f"File Type\t{metadata.get('file_type', 'Spectrum')}",
             f"File Version\t{metadata.get('file_version', '5')}",
             f"Start Date\t{metadata.get('start_date', '')}",
-            f"Start Time\t{metadata.get('start_time', '')}",
+            f"Start Time\t{start_time}",
             f"Time Zone\t{metadata.get('timezone', 'UTC')}",
             f"Author\t{metadata.get('author', '')}",
             f"Computer\t{metadata.get('computer', '')}",
@@ -681,6 +691,55 @@ class ExportProcessor:
         except Exception as e:
             logging.warning(f"Error converting timestamp in line: {str(e)}")
             return data_line
+    
+    def _convert_start_time_timezone(self, start_time: str, original_tz: str, target_tz: str, 
+                                   metadata: Dict[str, str]) -> str:
+        """
+        Convert the Start Time in header from original timezone to target timezone.
+        
+        Args:
+            start_time: Original start time string (HH:MM:SS format)
+            original_tz: Original timezone identifier
+            target_tz: Target timezone identifier
+            metadata: File metadata for date context
+            
+        Returns:
+            Converted start time string in HH:MM:SS format
+        """
+        try:
+            # Parse the time
+            time_obj = datetime.strptime(start_time, "%H:%M:%S")
+            
+            # Get the date from metadata
+            start_date_str = metadata.get('start_date', '')
+            if start_date_str:
+                try:
+                    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    # If date parsing fails, use today
+                    start_date = datetime.today().date()
+            else:
+                start_date = datetime.today().date()
+            
+            # Create full datetime
+            full_datetime = datetime.combine(start_date, time_obj.time())
+            
+            # Convert timezone
+            converted_datetime = self.timezone_converter.convert_timestamp(
+                full_datetime, original_tz, target_tz
+            )
+            
+            if converted_datetime is None:
+                # If conversion fails, return original time
+                logging.warning(f"Failed to convert start time {start_time} from {original_tz} to {target_tz}")
+                return start_time
+            
+            # Format the converted time (just the time part)
+            return converted_datetime.strftime("%H:%M:%S")
+            
+        except Exception as e:
+            logging.warning(f"Error converting start time {start_time}: {str(e)}")
+            return start_time
     
     def _add_original_data_header(self, header_lines: List[str], 
                                  original_header_lines: List[str]) -> None:
